@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RootBazar — CTF Challenges</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Unbounded:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:#080a0d;--bg2:#0d1117;--bg3:#111820;
+    --border:rgba(0,255,120,0.10);--border2:rgba(0,255,120,0.25);
+    --green:#00ff78;--green2:#00cc60;--green-dim:rgba(0,255,120,0.07);
+    --amber:#ffb400;--blue:#4488ff;--red:#ff4466;--purple:#cc88ff;
+    --text:#e8f0e8;--text2:#7a9080;--text3:#3d5045;
+    --mono:'IBM Plex Mono',monospace;--display:'Unbounded',sans-serif;--body:'DM Sans',sans-serif;
+    --sidebar-w:240px;--radius:10px;--radius-lg:14px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:14px;line-height:1.6;display:flex;min-height:100vh;}
+
+  .sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;overflow-y:auto;}
+  .sb-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border);font-family:var(--display);font-size:15px;font-weight:900;color:var(--text);text-decoration:none;display:block;letter-spacing:-0.3px;}
+  .sb-logo span{color:var(--green);}
+  .sb-user{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+  .sb-avatar{width:36px;height:36px;border-radius:50%;background:var(--green-dim);border:1.5px solid var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:12px;font-weight:900;color:var(--green);flex-shrink:0;}
+  .sb-name{font-weight:500;font-size:13px;}.sb-id{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:0.04em;}
+  .sb-section{padding:14px 20px 4px;font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;}
+  .sb-nav{list-style:none;padding:0 10px;}
+  .sb-nav li a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);font-size:13px;color:var(--text2);text-decoration:none;transition:all 0.18s;}
+  .sb-nav li a:hover{background:var(--green-dim);color:var(--text);}
+  .sb-nav li a.active{background:var(--green-dim);color:var(--green);border:1px solid var(--border2);}
+  .sb-nav li a .icon{font-size:14px;width:18px;text-align:center;}
+  .sb-badge{margin-left:auto;font-family:var(--mono);font-size:10px;background:var(--green);color:var(--bg);padding:1px 7px;border-radius:100px;font-weight:700;}
+  .sb-badge.amber{background:var(--amber);}
+  .sb-coins{margin:auto 0 0;padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .coins-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:0.04em;}
+  .coins-val{font-family:var(--display);font-size:16px;font-weight:900;color:var(--amber);}
+  .coins-add{font-family:var(--mono);font-size:10px;color:var(--bg);background:var(--amber);border:none;padding:5px 10px;border-radius:6px;cursor:pointer;font-weight:700;}
+
+  .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;}
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(8,10,13,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:16px;}
+  .topbar-title{font-family:var(--display);font-size:14px;font-weight:700;letter-spacing:-0.2px;flex:1;}
+  .live-badge{font-family:var(--mono);font-size:10px;color:var(--green);background:var(--green-dim);border:1px solid var(--border2);padding:5px 12px;border-radius:100px;letter-spacing:0.06em;display:flex;align-items:center;gap:6px;}
+  .live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 1.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+  .page-body{padding:28px;display:grid;grid-template-columns:1fr 280px;gap:24px;align-items:start;}
+
+  /* Stats */
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;grid-column:1/-1;margin-bottom:4px;}
+  .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;transition:border-color 0.2s;}
+  .stat-card:hover{border-color:var(--border2);}
+  .sc-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;}
+  .sc-val{font-family:var(--display);font-size:22px;font-weight:900;letter-spacing:-0.5px;}
+  .sc-val.green{color:var(--green);}.sc-val.amber{color:var(--amber);}.sc-val.blue{color:var(--blue);}
+  .sc-sub{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;}
+
+  /* Filter bar */
+  .filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+  .filter-pill{font-family:var(--mono);font-size:11px;color:var(--text3);background:transparent;border:1px solid var(--border);padding:7px 14px;border-radius:100px;cursor:pointer;letter-spacing:0.04em;transition:all 0.18s;}
+  .filter-pill:hover{border-color:var(--border2);color:var(--text2);}
+  .filter-pill.active{border-color:var(--green);color:var(--green);background:var(--green-dim);}
+  .filter-pill.diff-easy{}.filter-pill.diff-med{}.filter-pill.diff-hard{}
+
+  /* Challenge grid */
+  .challenges-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+  .challenge-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;cursor:pointer;transition:all 0.2s;animation:fadeUp 0.4s ease both;position:relative;overflow:hidden;}
+  .challenge-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity 0.2s;}
+  .challenge-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+  .challenge-card:hover::before{opacity:1;}
+  .challenge-card.easy::before{background:var(--green);}
+  .challenge-card.medium::before{background:var(--amber);}
+  .challenge-card.hard::before{background:var(--red);}
+  .challenge-card.insane::before{background:var(--purple);}
+  .challenge-card.solved{border-color:rgba(0,255,120,0.3);}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+  .cc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:12px;}
+  .cc-cat{font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:100px;letter-spacing:0.04em;}
+  .cat-web{background:rgba(68,136,255,0.1);color:var(--blue);border:1px solid rgba(68,136,255,0.2);}
+  .cat-pwn{background:rgba(255,68,102,0.1);color:var(--red);border:1px solid rgba(255,68,102,0.2);}
+  .cat-rev{background:rgba(204,136,255,0.1);color:var(--purple);border:1px solid rgba(204,136,255,0.2);}
+  .cat-crypto{background:rgba(255,180,0,0.1);color:var(--amber);border:1px solid rgba(255,180,0,0.2);}
+  .cat-osint{background:rgba(0,255,120,0.08);color:var(--green);border:1px solid var(--border2);}
+  .cat-misc{background:rgba(255,255,255,0.05);color:var(--text2);border:1px solid var(--border);}
+
+  .diff-pill{font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:100px;letter-spacing:0.04em;}
+  .d-easy{background:rgba(0,255,120,0.1);color:var(--green);}
+  .d-medium{background:rgba(255,180,0,0.1);color:var(--amber);}
+  .d-hard{background:rgba(255,68,102,0.1);color:var(--red);}
+  .d-insane{background:rgba(204,136,255,0.1);color:var(--purple);}
+
+  .cc-title{font-family:var(--display);font-size:14px;font-weight:700;letter-spacing:-0.2px;margin-bottom:6px;line-height:1.3;}
+  .cc-desc{font-size:12px;color:var(--text2);line-height:1.6;font-weight:300;margin-bottom:14px;}
+  .cc-footer{display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border);}
+  .cc-points{font-family:var(--display);font-size:13px;font-weight:900;color:var(--amber);}
+  .cc-solves{font-family:var(--mono);font-size:10px;color:var(--text3);}
+  .cc-solved-badge{font-family:var(--mono);font-size:10px;color:var(--green);background:var(--green-dim);border:1px solid var(--border2);padding:3px 9px;border-radius:100px;}
+
+  /* Right column */
+  .right-col{}
+  .widget{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px;}
+  .widget-title{font-family:var(--mono);font-size:11px;color:var(--text2);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+
+  /* Leaderboard */
+  .lb-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+  .lb-row:last-child{border-bottom:none;}
+  .lb-rank{font-family:var(--mono);font-size:11px;color:var(--text3);width:22px;text-align:center;}
+  .lb-rank.gold{color:#FFD700;}.lb-rank.silver{color:#C0C0C0;}.lb-rank.bronze{color:#CD7F32;}
+  .lb-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:10px;font-weight:900;flex-shrink:0;}
+  .av-g{background:var(--green-dim);border:1px solid var(--border2);color:var(--green);}
+  .av-b{background:rgba(68,136,255,0.08);border:1px solid rgba(68,136,255,0.2);color:var(--blue);}
+  .av-a{background:rgba(255,180,0,0.08);border:1px solid rgba(255,180,0,0.2);color:var(--amber);}
+  .lb-name{flex:1;font-size:12px;font-weight:500;}
+  .lb-pts{font-family:var(--mono);font-size:11px;color:var(--amber);font-weight:700;}
+
+  /* Your progress */
+  .progress-item{margin-bottom:14px;}
+  .prog-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:6px;letter-spacing:0.04em;}
+  .prog-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+  .prog-fill{height:100%;border-radius:2px;transition:width 0.6s ease;}
+
+  /* Timer */
+  .timer-box{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:16px;}
+  .timer-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:8px;}
+  .timer-val{font-family:var(--display);font-size:28px;font-weight:900;color:var(--green);letter-spacing:-1px;}
+  .timer-sub{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;}
+
+  /* Challenge modal */
+  .modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:600px;max-height:90vh;overflow-y:auto;animation:modalIn 0.22s ease;}
+  @keyframes modalIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
+  .modal-header{padding:24px 28px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+  .modal-close{background:transparent;border:1px solid var(--border);color:var(--text2);width:32px;height:32px;border-radius:6px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.18s;flex-shrink:0;}
+  .modal-close:hover{border-color:var(--red);color:var(--red);}
+  .modal-body{padding:24px 28px;}
+  .modal-footer{padding:18px 28px;border-top:1px solid var(--border);display:flex;gap:10px;}
+
+  .chall-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+  .meta-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;}
+  .meta-label{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px;}
+  .meta-val{font-family:var(--display);font-size:15px;font-weight:900;}
+
+  .flag-input-wrap{display:flex;gap:10px;margin-top:16px;}
+  .flag-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:13px 16px;font-family:var(--mono);font-size:13px;color:var(--green);outline:none;letter-spacing:0.05em;transition:border-color 0.2s;}
+  .flag-input::placeholder{color:var(--text3);}
+  .flag-input:focus{border-color:var(--green);}
+  .flag-submit{font-family:var(--display);font-size:12px;font-weight:700;color:var(--bg);background:var(--green);border:none;padding:13px 22px;border-radius:var(--radius);cursor:pointer;white-space:nowrap;transition:background 0.2s;}
+  .flag-submit:hover{background:var(--green2);}
+
+  .hint-box{background:rgba(255,180,0,0.06);border:1px solid rgba(255,180,0,0.2);border-radius:var(--radius);padding:14px 16px;margin-top:16px;}
+  .hint-title{font-family:var(--mono);font-size:10px;color:var(--amber);letter-spacing:0.06em;margin-bottom:6px;}
+  .hint-text{font-size:12px;color:var(--text2);line-height:1.6;font-weight:300;}
+
+  .btn-primary{flex:1;font-family:var(--display);font-size:12px;font-weight:700;color:var(--bg);background:var(--green);border:none;padding:13px;border-radius:var(--radius);cursor:pointer;transition:background 0.2s;}
+  .btn-primary:hover{background:var(--green2);}
+  .btn-outline{flex:1;background:transparent;border:1px solid var(--border2);color:var(--text2);padding:12px;border-radius:var(--radius);font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:0.04em;transition:all 0.2s;}
+  .btn-outline:hover{border-color:var(--green);color:var(--green);}
+
+  .flag-result{display:none;font-family:var(--mono);font-size:12px;padding:10px 14px;border-radius:6px;margin-top:10px;letter-spacing:0.03em;}
+  .flag-result.correct{background:var(--green-dim);color:var(--green);border:1px solid var(--border2);}
+  .flag-result.wrong{background:rgba(255,68,102,0.08);color:var(--red);border:1px solid rgba(255,68,102,0.2);}
+
+  @media(max-width:1100px){.page-body{grid-template-columns:1fr;}.right-col{display:none;}}
+  @media(max-width:700px){.sidebar{display:none;}.main{margin-left:0;}.page-body{padding:16px;}.stats-row{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="index.html" class="sb-logo">Root<span>Bazar</span></a>
+  <div class="sb-user"><div class="sb-avatar">GR</div><div><div class="sb-name">ghost_root</div><div class="sb-id">0xRB-F4A2</div></div></div>
+  <div class="sb-section">// Community</div>
+  <ul class="sb-nav">
+    <li><a href="dashboard.html"><span class="icon">◈</span> Feed</a></li>
+    <li><a href="#"><span class="icon">⬡</span> Forum</a></li>
+    <li><a href="rooms.html"><span class="icon">◷</span> Private Rooms</a></li>
+    <li><a href="#"><span class="icon">⚑</span> Bounty Board <span class="sb-badge amber">3</span></a></li>
+    <li><a href="ctf.html" class="active"><span class="icon">⬜</span> CTF Challenges</a></li>
+  </ul>
+  <div class="sb-section">// Learn</div>
+  <ul class="sb-nav">
+    <li><a href="#"><span class="icon">▣</span> Courses</a></li>
+    <li><a href="#"><span class="icon">⬟</span> Tutorials</a></li>
+    <li><a href="#"><span class="icon">⊞</span> Scripts Library</a></li>
+    <li><a href="roadmap.html"><span class="icon">◎</span> Newbie Roadmap</a></li>
+  </ul>
+  <div class="sb-section">// Market</div>
+  <ul class="sb-nav">
+    <li><a href="marketplace.html"><span class="icon">◆</span> Marketplace</a></li>
+    <li><a href="#"><span class="icon">◷</span> My Listings</a></li>
+  </ul>
+  <div class="sb-section">// Account</div>
+  <ul class="sb-nav">
+    <li><a href="#"><span class="icon">⬟</span> My Profile</a></li>
+    <li><a href="#"><span class="icon">▣</span> Settings</a></li>
+  </ul>
+  <div class="sb-coins"><div><div class="coins-label">// your coins</div><div class="coins-val">350</div></div><button class="coins-add">+ Buy</button></div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">CTF Challenges</div>
+    <div class="live-badge"><div class="live-dot"></div>Season 1 — Live</div>
+  </div>
+
+  <div class="page-body">
+    <div class="stats-row">
+      <div class="stat-card"><div class="sc-label">Total challenges</div><div class="sc-val blue">24</div><div class="sc-sub">6 categories</div></div>
+      <div class="stat-card"><div class="sc-label">Your solved</div><div class="sc-val green">0 / 24</div><div class="sc-sub">start solving</div></div>
+      <div class="stat-card"><div class="sc-label">Your points</div><div class="sc-val amber">0 pts</div><div class="sc-sub">leaderboard rank: —</div></div>
+      <div class="stat-card"><div class="sc-label">Season ends</div><div class="sc-val" id="countdown" style="font-size:16px">—</div><div class="sc-sub">top 3 win prizes</div></div>
+    </div>
+
+    <!-- Main column -->
+    <div>
+      <div class="filter-bar">
+        <button class="filter-pill active" onclick="filterChallenges('all',this)">All (24)</button>
+        <button class="filter-pill" onclick="filterChallenges('Web',this)">Web</button>
+        <button class="filter-pill" onclick="filterChallenges('Pwn',this)">Pwn</button>
+        <button class="filter-pill" onclick="filterChallenges('Rev',this)">Reversing</button>
+        <button class="filter-pill" onclick="filterChallenges('Crypto',this)">Crypto</button>
+        <button class="filter-pill" onclick="filterChallenges('OSINT',this)">OSINT</button>
+        <button class="filter-pill" onclick="filterChallenges('Misc',this)">Misc</button>
+        <button class="filter-pill" style="margin-left:auto" onclick="filterDiff('easy',this)">Easy</button>
+        <button class="filter-pill" onclick="filterDiff('medium',this)">Medium</button>
+        <button class="filter-pill" onclick="filterDiff('hard',this)">Hard</button>
+        <button class="filter-pill" onclick="filterDiff('insane',this)">Insane</button>
+      </div>
+      <div class="challenges-grid" id="challenges-grid"></div>
+    </div>
+
+    <!-- Right column -->
+    <div class="right-col">
+      <div class="timer-box">
+        <div class="timer-label">// season 1 ends in</div>
+        <div class="timer-val" id="timer-val">14:22:08</div>
+        <div class="timer-sub">top 3 earn Founder coins + badge</div>
+      </div>
+
+      <div class="widget">
+        <div class="widget-title">// leaderboard</div>
+        <div class="lb-row"><div class="lb-rank gold">01</div><div class="lb-av av-g">SK</div><div class="lb-name">s1lent_rx</div><div class="lb-pts">4,800</div></div>
+        <div class="lb-row"><div class="lb-rank silver">02</div><div class="lb-av av-b">NB</div><div class="lb-name">null_byte_22</div><div class="lb-pts">4,200</div></div>
+        <div class="lb-row"><div class="lb-rank bronze">03</div><div class="lb-av av-a">RX</div><div class="lb-name">r3d_phantom</div><div class="lb-pts">3,750</div></div>
+        <div class="lb-row"><div class="lb-rank">04</div><div class="lb-av av-b">VW</div><div class="lb-name">v01d_walker</div><div class="lb-pts">3,100</div></div>
+        <div class="lb-row"><div class="lb-rank">05</div><div class="lb-av av-g">GR</div><div class="lb-name">ghost_root</div><div class="lb-pts">0</div></div>
+      </div>
+
+      <div class="widget">
+        <div class="widget-title">// your progress</div>
+        <div class="progress-item">
+          <div class="prog-label"><span>Web</span><span>0/5</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:0%;background:var(--blue)"></div></div>
+        </div>
+        <div class="progress-item">
+          <div class="prog-label"><span>Pwn</span><span>0/5</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:0%;background:var(--red)"></div></div>
+        </div>
+        <div class="progress-item">
+          <div class="prog-label"><span>Reversing</span><span>0/4</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:0%;background:var(--purple)"></div></div>
+        </div>
+        <div class="progress-item">
+          <div class="prog-label"><span>Crypto</span><span>0/4</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:0%;background:var(--amber)"></div></div>
+        </div>
+        <div class="progress-item">
+          <div class="prog-label"><span>OSINT</span><span>0/3</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:0%;background:var(--green)"></div></div>
+        </div>
+        <div class="progress-item" style="margin-bottom:0">
+          <div class="prog-label"><span>Misc</span><span>0/3</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:0%;background:var(--text2)"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHALLENGE MODAL -->
+<div class="modal-overlay" id="chall-modal" onclick="if(event.target===this)closeChallModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="flex:1">
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <span class="cc-cat" id="m-cat">Web</span>
+          <span class="diff-pill" id="m-diff">Easy</span>
+        </div>
+        <div style="font-family:var(--display);font-size:18px;font-weight:900;letter-spacing:-0.5px;margin-bottom:4px" id="m-title">Challenge Title</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3)" id="m-author">by ghost_admin</div>
+      </div>
+      <button class="modal-close" onclick="closeChallModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="chall-meta">
+        <div class="meta-box"><div class="meta-label">Points</div><div class="meta-val amber" id="m-pts">100</div></div>
+        <div class="meta-box"><div class="meta-label">Solves</div><div class="meta-val blue" id="m-solves">0</div></div>
+        <div class="meta-box"><div class="meta-label">Difficulty</div><div class="meta-val" id="m-diff2">Easy</div></div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.75;font-weight:300;margin-bottom:16px" id="m-desc">Description</div>
+
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text2);letter-spacing:0.04em;margin-bottom:8px">// submit flag</div>
+      <div class="flag-input-wrap">
+        <input class="flag-input" id="flag-input" type="text" placeholder="RootBazar{your_flag_here}"/>
+        <button class="flag-submit" onclick="submitFlag()">Submit →</button>
+      </div>
+      <div class="flag-result" id="flag-result"></div>
+
+      <div class="hint-box" style="margin-top:20px">
+        <div class="hint-title">// hint available (-25 pts)</div>
+        <div class="hint-text" id="m-hint-preview">Think about common misconfigurations in this category. Click to reveal for 25 points.</div>
+        <button onclick="revealHint()" style="margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--amber);background:transparent;border:1px solid rgba(255,180,0,0.3);padding:6px 12px;border-radius:6px;cursor:pointer;letter-spacing:0.04em">Reveal Hint (−25 pts)</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeChallModal()">← Back to challenges</button>
+      <button class="btn-primary" onclick="submitFlag()">Submit Flag →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CHALLENGES = [
+  {id:1,title:'SQL Injection 101',cat:'Web',catClass:'cat-web',diff:'easy',diffClass:'d-easy',pts:100,solves:89,desc:'A login form with a classic SQL injection vulnerability. Find the flag hidden in the admin\'s secret column.',hint:'Try a simple boolean-based payload first. What happens when you input a single quote?',flag:'RootBazar{sqli_1s_nev3r_dead}',delay:'0.05s'},
+  {id:2,title:'Cookie Monster',cat:'Web',catClass:'cat-web',diff:'easy',diffClass:'d-easy',pts:100,solves:74,desc:'This app uses cookies to store your session role. Inspect, modify, become admin.',hint:'Base64 is not encryption. Decode your session cookie and look at what\'s inside.',flag:'RootBazar{c00k13s_4r3_delic10us}',delay:'0.1s'},
+  {id:3,title:'SSRF to Internal Cloud',cat:'Web',catClass:'cat-web',diff:'medium',diffClass:'d-medium',pts:250,solves:31,desc:'The app fetches URLs on your behalf. Can you make it fetch something it shouldn\'t? The flag is on the internal metadata service.',hint:'AWS metadata endpoint: 169.254.169.254. What path gives you IAM credentials?',flag:'RootBazar{ssrf_t0_th3_cl0ud}',delay:'0.15s'},
+  {id:4,title:'JWT Algorithm Confusion',cat:'Web',catClass:'cat-web',diff:'hard',diffClass:'d-hard',pts:400,solves:12,desc:'The server accepts both HS256 and RS256. The public key is exposed. Forge an admin token.',hint:'alg:none is patched. But what if you sign an RS256 token with the public key using HS256?',flag:'RootBazar{jwt_alg0_c0nfusi0n}',delay:'0.2s'},
+  {id:5,title:'GraphQL Introspection',cat:'Web',catClass:'cat-web',diff:'medium',diffClass:'d-medium',pts:250,solves:28,desc:'The GraphQL API has introspection enabled. Hidden fields are not hidden if you know where to look.',hint:'Run a full introspection query. Look for types that don\'t appear in the visible schema.',flag:'RootBazar{gr4phql_s3cr3t_f13ld}',delay:'0.25s'},
+  {id:6,title:'ret2libc warmup',cat:'Pwn',catClass:'cat-pwn',diff:'easy',diffClass:'d-easy',pts:150,solves:44,desc:'Classic 64-bit buffer overflow. No canary, no PIE. Leak libc and spawn a shell.',hint:'Find the offset with a cyclic pattern. Then ROP to puts() to leak the libc base.',flag:'RootBazar{r3t2l1bc_cl4ss1c}',delay:'0.05s'},
+  {id:7,title:'Heap Feng Shui',cat:'Pwn',catClass:'cat-pwn',diff:'insane',diffClass:'d-insane',pts:500,solves:3,desc:'A custom heap allocator with a subtle off-by-one. Corrupt a chunk to get arbitrary write.',hint:'Trace every malloc and free. The vulnerability is in the size calculation on line ~180.',flag:'RootBazar{h3ap_f3ng_shu1_m4st3r}',delay:'0.1s'},
+  {id:8,title:'Crackme #1',cat:'Rev',catClass:'cat-rev',diff:'easy',diffClass:'d-easy',pts:100,solves:67,desc:'A simple x86-64 ELF that checks your input. Reverse the validation function and find the key.',hint:'Open in Ghidra. The check function is at 0x401234. Look at what it XORs your input with.',flag:'RootBazar{gh1dr4_1s_y0ur_fr13nd}',delay:'0.05s'},
+  {id:9,title:'Anti-Debug Maze',cat:'Rev',catClass:'cat-rev',diff:'hard',diffClass:'d-hard',pts:400,solves:8,desc:'The binary detects debuggers and lies to you. Patch it, strip the anti-debug, find the real flag.',hint:'ptrace(PTRACE_TRACEME) call is the first check. NOP it out and see what else changes.',flag:'RootBazar{n0_d3bug_n0_pr0bl3m}',delay:'0.1s'},
+  {id:10,title:'RSA Small Exponent',cat:'Crypto',catClass:'cat-crypto',diff:'easy',diffClass:'d-easy',pts:100,solves:52,desc:'e=3 and the message is short. No padding. Cube root the ciphertext.',hint:'If m^e < n, then c = m^e exactly. Just take the integer cube root of c.',flag:'RootBazar{3_1s_t00_sm4ll}',delay:'0.05s'},
+  {id:11,title:'Vigenere++ with Twist',cat:'Crypto',catClass:'cat-crypto',diff:'medium',diffClass:'d-medium',pts:250,solves:19,desc:'A modified Vigenere cipher with a rotating key length. Frequency analysis won\'t work directly.',hint:'Find the key length first using the Kasiski test or Index of Coincidence.',flag:'RootBazar{v1g3n3r3_f4lls_t0_k4s1sk1}',delay:'0.1s'},
+  {id:12,title:'Satellite OSINT',cat:'OSINT',catClass:'cat-osint',diff:'medium',diffClass:'d-medium',pts:200,solves:22,desc:'A hacker left a trail. Find their real city using only the metadata in three public images they posted.',hint:'EXIF data is a goldmine. Even if stripped, background details in images place you geographically.',flag:'RootBazar{3x1f_n3v3r_l13s}',delay:'0.05s'},
+  {id:13,title:'Find the Leaker',cat:'OSINT',catClass:'cat-osint',diff:'hard',diffClass:'d-hard',pts:350,solves:7,desc:'A data breach was posted anonymously. Three forum accounts, one person. Link them using public signals.',hint:'Writing style, timing patterns, and timezone clues across three platforms.',flag:'RootBazar{0s1nt_l1nks_3v3ryth1ng}',delay:'0.1s'},
+  {id:14,title:'Stego in Plain Sight',cat:'Misc',catClass:'cat-misc',diff:'easy',diffClass:'d-easy',pts:100,solves:61,desc:'The flag is hidden in this PNG. It\'s not in the pixels — think about the file structure itself.',hint:'Run binwalk on the image. Then check the LSB of the red channel anyway, just to be sure.',flag:'RootBazar{st3g0_1s_4rt}',delay:'0.05s'},
+];
+
+let activeChall = null;
+let solvedIds = new Set();
+
+function renderChallenges(filtered){
+  const grid = document.getElementById('challenges-grid');
+  grid.innerHTML='';
+  (filtered||CHALLENGES).forEach((c,i)=>{
+    const solved = solvedIds.has(c.id);
+    grid.innerHTML+=`<div class="challenge-card ${c.diff} ${solved?'solved':''}" style="animation-delay:${i*0.04}s" onclick="openChall(${c.id})">
+      <div class="cc-top">
+        <span class="cc-cat ${c.catClass}">${c.cat}</span>
+        <span class="diff-pill ${c.diffClass}">${c.diff}</span>
+      </div>
+      <div class="cc-title">${c.title}</div>
+      <div class="cc-desc">${c.desc.substring(0,90)}...</div>
+      <div class="cc-footer">
+        <span class="cc-points">${c.pts} pts</span>
+        <span class="cc-solves">${c.solves} solves</span>
+        ${solved?'<span class="cc-solved-badge">✓ solved</span>':''}
+      </div>
+    </div>`;
+  });
+}
+
+function openChall(id){
+  activeChall = CHALLENGES.find(c=>c.id===id);
+  if(!activeChall) return;
+  document.getElementById('m-cat').textContent = activeChall.cat;
+  document.getElementById('m-cat').className = 'cc-cat '+activeChall.catClass;
+  document.getElementById('m-diff').textContent = activeChall.diff;
+  document.getElementById('m-diff').className = 'diff-pill '+activeChall.diffClass;
+  document.getElementById('m-title').textContent = activeChall.title;
+  document.getElementById('m-author').textContent = 'by ghost_admin · '+activeChall.pts+' pts';
+  document.getElementById('m-pts').textContent = activeChall.pts;
+  document.getElementById('m-solves').textContent = activeChall.solves;
+  document.getElementById('m-diff2').textContent = activeChall.diff;
+  document.getElementById('m-desc').textContent = activeChall.desc;
+  document.getElementById('m-hint-preview').textContent = 'Think carefully about this category. Reveal for 25 pts.';
+  document.getElementById('flag-input').value='';
+  document.getElementById('flag-result').style.display='none';
+  document.getElementById('chall-modal').classList.add('open');
+}
+
+function closeChallModal(){ document.getElementById('chall-modal').classList.remove('open'); }
+
+function submitFlag(){
+  const input = document.getElementById('flag-input').value.trim();
+  const result = document.getElementById('flag-result');
+  if(!input){ result.textContent='> Please enter a flag.'; result.className='flag-result wrong'; result.style.display='block'; return; }
+  if(input===activeChall.flag){
+    result.textContent='> ✓ Correct! Flag accepted. +'+activeChall.pts+' points added to your score.';
+    result.className='flag-result correct'; result.style.display='block';
+    solvedIds.add(activeChall.id);
+    setTimeout(()=>{ closeChallModal(); renderChallenges(); },1800);
+  } else {
+    result.textContent='> ✗ Wrong flag. Try again.';
+    result.className='flag-result wrong'; result.style.display='block';
+  }
+}
+
+function revealHint(){
+  document.getElementById('m-hint-preview').textContent = activeChall.hint;
+}
+
+function filterChallenges(cat, btn){
+  document.querySelectorAll('.filter-bar .filter-pill').forEach(b=>{ if(['All (24)','Web','Pwn','Reversing','Crypto','OSINT','Misc'].some(t=>b.textContent===t)) b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderChallenges(cat==='all'?null:CHALLENGES.filter(c=>c.cat===cat));
+}
+
+function filterDiff(diff, btn){
+  document.querySelectorAll('.filter-bar .filter-pill').forEach(b=>{ if(['Easy','Medium','Hard','Insane'].includes(b.textContent)) b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderChallenges(CHALLENGES.filter(c=>c.diff===diff));
+}
+
+/* Countdown timer */
+function updateTimer(){
+  const now=new Date();
+  const end=new Date(now.getFullYear(),now.getMonth(),now.getDate()+14);
+  const diff=end-now;
+  const d=Math.floor(diff/86400000);
+  const h=Math.floor((diff%86400000)/3600000);
+  const m=Math.floor((diff%3600000)/60000);
+  const s=Math.floor((diff%60000)/1000);
+  document.getElementById('timer-val').textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  document.getElementById('countdown').textContent=`${d}d ${h}h`;
+}
+setInterval(updateTimer,1000); updateTimer();
+
+/* Flag input enter key */
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&document.getElementById('chall-modal').classList.contains('open')) submitFlag(); });
+
+renderChallenges();
+</script>
+</body>
+</html>
